@@ -1,0 +1,5 @@
+1. SRP (Single Responsibility Principle)
+2. OCP (Open-Closed Principle)
+3. LSP (Liskov Substitution Principle)
+4. ISP (Interface Separate Principle)
+5. DIP (Dependency Inverse Principle)

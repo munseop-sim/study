@@ -1,6 +1,4 @@
 ## 1. 본인 브랜치 생성
-
-
 ```bash
 git checkout -b 브랜치명
 ex) git checkout -b haseonj

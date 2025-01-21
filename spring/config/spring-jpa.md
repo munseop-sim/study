@@ -1,4 +1,4 @@
-## SPRING.JPA.HIBERNATE.DDL_AUTO
+### SPRING.JPA.HIBERNATE.DDL_AUTO
 Spring Boot에서 Hibernate를 사용할 때, 데이터베이스 스키마를 자동으로 생성하거나 변경하는 방법을 설정하는 속성\\
 
 1. none: 이 값은 Hibernate가 데이터베이스 스키마를 자동으로 생성하거나 변경하지 않도록 설정. 이 설정은 일반적으로 프로덕션 환경에서 사용.

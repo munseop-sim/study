@@ -1,19 +1,19 @@
 # transaction isolation level
 1. Read Uncommitted (커밋되지 않은 데이터 읽기)
-- 트랜잭션의 내용이 커밋이나 롤백과 상관없이 다른 트랜잭션에 조회 가능
-- Dirty Read, Non-Repeatable Read, Phantom Read 발생 가능
+   - 트랜잭션의 내용이 커밋이나 롤백과 상관없이 다른 트랜잭션에 조회 가능
+   - Dirty Read, Non-Repeatable Read, Phantom Read 발생 가능
 2. Read Committed (커밋된 데이터 읽기)
-- 트랜잭션이 커밋된 데이터만 조회 가능
-- Non-Repeatable Read, Phantom Read 발생 가능
-- Oracle, SQL-SERVER 의 default isolation level
+   - 트랜잭션이 커밋된 데이터만 조회 가능
+   - Non-Repeatable Read, Phantom Read 발생 가능
+   - Oracle, SQL-SERVER 의 default isolation level
 3. Repeatable Read (반복가능한 읽기)
-- 트랜잭션이 시작되기 전에 커밋된 내용에 대해서만 조회 가능
-- Phantom Read 발생 가능
-- MySQL의 default isolation level
+   - 트랜잭션이 시작되기 전에 커밋된 내용에 대해서만 조회 가능
+   - Phantom Read 발생 가능
+   - MySQL의 default isolation level
 4. Serializable (직렬화)
-- 트랜잭션의 내용이 완전히 격리되어 다른 트랜잭션에 조회 불가
-- 가장 단순하면서 엄격한 격리수준이지만 성능측면에서 처리성능이 가장 낮음
-- Dirty Read, Non-Repeatable Read, Phantom Read 발생 불가
+   - 트랜잭션의 내용이 완전히 격리되어 다른 트랜잭션에 조회 불가
+   - 가장 단순하면서 엄격한 격리수준이지만 성능측면에서 처리성능이 가장 낮음
+   - Dirty Read, Non-Repeatable Read, Phantom Read 발생 불가
 
 ## 관련 용어
 - Dirty Read: 다른 트랜잭션이 커밋하지 않은 데이터를 읽는 현상
