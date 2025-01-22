@@ -132,3 +132,5 @@ dmypy.json
 /out/**
 /java_language/.gradle/
 java_language.iml
+
+**/.gradle
