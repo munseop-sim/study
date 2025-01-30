@@ -59,6 +59,11 @@
     - 순서: WebMvcConfigurer를 구현한 클래스에서 addInterceptors 메서드를 사용하여 설정
     - 인터셉터의 순서는 등록 순서에 따른다.
 
+### 로그 vs 메트릭
+- 로그는 프로그램의 흐름에 따른 상태값을 출력 또는 저장하기 위한용도
+  - `시스템이 무엇을 했는지`
+- 메트릭: 시스템의 상태(CPU, 에러발생, 네트워크I/O 등)를 파악하기 위함
+  - `시스템의 전반적인 상태`
 
 - [Spring MVC의 실행흐름](https://www.maeil-mail.kr/question/11)
 - [@Controller 와 @RestController 의 차이점](https://www.maeil-mail.kr/question/12)

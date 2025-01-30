@@ -65,6 +65,9 @@
 
 ### OSIV
 [OSIV(Open Session In View) 옵션에 대해서 설명](https://www.maeil-mail.kr/question/1)
+- OSIV(open session in view) 는 영속성 컨텍스트를 뷰까지 열어둔다는 의미입
+- 뷰에서도 지연로딩이 가능함.
+- 트랜잭션 범위 밖에서 지연로딩을 반드시 수행해야하는 경우에는 비활성화하기 어려울 수도 있음.
 
 - [JPA를 사용하는 이유](https://www.maeil-mail.kr/question/25)
 - [JPA, Hibernate, Spring Data JPA 의 차이](https://www.maeil-mail.kr/question/26)
