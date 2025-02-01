@@ -30,10 +30,12 @@
     - 기본 분배방식(Load Balancing): Round-Robin
     - IP당 서버를 분배하는 ip_hash등 여러가지 부하분산 알고리즘을 사용할 수 있음
     - https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/
+  - [nginx.conf 예제](nginx.conf)
 - HAproxy
   - 하드웨어 기반의 L4/L7 스위치를 대체하기 위한 오픈소스 SW 솔루션
   - TCP및 HTTP기반 애플리케이션을 위한 고가용성 LoadBalacing 및 프록시 기능을 제공하는 매우 빠르고 안정적인 무료 Reverse Proxy
   - 주요기능
+    - 통계정보 활용가능
     - SSL 지원
     - Load Balancing
     - Active Health Check
@@ -46,3 +48,4 @@
     - Http기반의 URI를 이용한 트래픽 전달
     - 동일한 도메인의 하위에 존재하는 여러 웹 애플리케이션 서버를 사용할 수 있다.
     - 사용자의 요청과 설정에 따른 부하분산
+    - [L7기반의 URI매핑 HAproxy.cfg 예제](haproxy.cfg)
