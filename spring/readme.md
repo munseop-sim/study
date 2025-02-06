@@ -65,9 +65,32 @@
 - 메트릭: 시스템의 상태(CPU, 에러발생, 네트워크I/O 등)를 파악하기 위함
   - `시스템의 전반적인 상태`
 
+### 동기 vs 비동기
+- 동기 : 제어권이 반환되지 않음.
+- 비동기: 제어권을 즉시 반환하며, 블로킹되지 않음. 호출결과는 callback 함수로 처리
+  - 스프링에서는 @Async 어노테이션을 사용하여 비동기 처리를 수행
+  - @Async 가 적용된 메서드에서 발생하는 예외는 호출자에게 전파되지 않음. 비동기 메서드에서 예외를 정상적으로 처리하기 위해서는 별도의 비동기 예외 처리기를 사용
+    1. `AsyncUncaughtExceptionHandler` 구현(제일 많이 사용)
+    2. `Future`, `CompletableFuture`를 사용하여 예외 처리 : caller 에서 처리한다.
+    3. 메서드 내부에서 자체적으로 처리 -> 메세지 알람들의 처리할때나..사용(비추)
+  - @Async 어노테이션은 **프록시 기반**으로 동작하기 때문에 같은 클래스 내부에서 직접 호출하는 경우 별도의 스레드에서 메서드가 실행되지 않는다.
+
+### ControllerAdvice에 대해 설명
+- `@ControllerAdvice`는 모든 컨트롤러에 대해 전역 기능을 제공하는 애너테이션. 
+- `@ControllerAdvice`가 선언된 클래스에 @ExceptionHandler, @InitBinder, @ModelAttribute를 등록하면 예외 처리, 바인딩 등을 한 곳에서 처리할 수 있어, 코드의 중복을 줄이고 유지보수성을 높일 수 있음.
+  - @ExceptionHandler: 전역 Exception Handler
+  - @InitBinder: **특정 컨트롤러 또는 전역 데이터 바인딩 설정**을 사용자화할 수 있도록 도와주는 어노테이션
+    - 특정 요청 파라미터의 데이터 변환 처리 (커스텀 바인더 사용).
+    - 사용자가 원하는 방식으로 데이터 포맷 지정 (e.g., 날짜 포맷 지정).
+    - 전역에서 불필요한 요청 파라미터 바인딩 방지.
+  - @ModelAttribute: **모든 컨트롤러에서 공통적으로 사용할 모델 데이터**를 설정하거나, 요청 파라미터를 모델 객체에 바인딩해주는 역할
+    - 전역적으로 뷰에 공통 데이터를 제공하거나, 공통 객체를 모델에 추가할 때 유용.
+    - 비동기 요청이나 페이지 렌더링에서 공통적으로 필요한 데이터를 다룰 때 많이 사용.
+- `@ControllerAdvice`는 내부에 `@Component`가 포함되어 있어 컴포넌트 스캔 과정에서 빈으로 등록. 
+- `@RestControllerAdvice`는 내부에 `@ResponseBody`를 포함하여 `@ExceptionHandler`와 함께 사용될 때 예외 응답을 Json 형태로 내려준다는 특징
+
 - [Spring MVC의 실행흐름](https://www.maeil-mail.kr/question/11)
 - [@Controller 와 @RestController 의 차이점](https://www.maeil-mail.kr/question/12)
-- [ControllerAdvice에 대해 설명](https://www.maeil-mail.kr/question/13)
 - [RequestBody VS ModelAttribute의 차이점](https://www.maeil-mail.kr/question/14)
 - [톰캣에 대해서 설명](https://www.maeil-mail.kr/question/22)
 
