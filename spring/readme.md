@@ -30,7 +30,7 @@
   - 여러개 값 바인딩 가능
   - RelaxedBiding 적용
   - 
-### [spring boot auto-configuration](spring_auto_configuration.md)
+
 
 ### [@Exception Handler](exception_handler.md)
 
@@ -89,12 +89,70 @@
 - `@ControllerAdvice`는 내부에 `@Component`가 포함되어 있어 컴포넌트 스캔 과정에서 빈으로 등록. 
 - `@RestControllerAdvice`는 내부에 `@ResponseBody`를 포함하여 `@ExceptionHandler`와 함께 사용될 때 예외 응답을 Json 형태로 내려준다는 특징
 
-- [Spring MVC의 실행흐름](https://www.maeil-mail.kr/question/11)
-- [@Controller 와 @RestController 의 차이점](https://www.maeil-mail.kr/question/12)
-- [RequestBody VS ModelAttribute의 차이점](https://www.maeil-mail.kr/question/14)
-- [톰캣에 대해서 설명](https://www.maeil-mail.kr/question/22)
+### Spring MVC의 실행흐름
+1. 요청(Request)이 서블릿 컨테이너(톰캣, 제티..)에 도착하고 이는 1차적으로 필터를 통과하여 스프링의 DispatcherServlet에 전달됨.
+2. DispatcherServlet 에서는 HandlerMapping을 통하여 어떻게 처리해야될지 판단
+3. HandlerMapping을 통해서 어떤 Controller에서 처리해야될지 결정이 나면 이는 HandlerAdapter를 통해 해당 처리기에 전달된다.
+4. (선택적실행) 인터셉터 실행(preHandle)
+5. 해당 처리기(Handler)에서 요청에 대한 처리를 완료한후
+6. (선택적실행) 인터셉터 실행(postHandle)
+7. View 존재유무
+   1. @Controller: ViewResolver를 통해서 View를 결정한다.
+   2. @RestController: HttpMessageConverter를 통해 JSON, XML등의 특정 형식의 데이터로 변환된다.
+8. (무조건실행) 인터셉터 실행(afterCompletion) : exception에 상관없이 항상 실행
+9. 요청에 대한 응답이 DispatcherServlet &rarr; 서블릿 컨테이너를 통해 요청자에게 응답결과가 전달된다.
 
-- [Spring, SpringBoot 차이점](https://www.maeil-mail.kr/question/24)
-- [@Component, @Controller, @Service, @Repository의 차이에 대해서 설명](https://www.maeil-mail.kr/question/72)
-- [데이터베이스 커넥션 풀(Connection Pool)을 사용하지 않으면 어떤 문제가 발생할 수 있나요?](https://www.maeil-mail.kr/question/88)
+### @Controller 와 @RestController
+- @Controller: 주로 뷰를 반환하는 컨트롤러를 정의할 때 사용
+  - 메서드가 반환하는 값은 뷰리졸버에 의해 해석되어 JSP, Thymeleaf등과 같은 템플릿 엔진을 통해 HTML을 생성한다. 
+- @RestController: RESTful 웹서비스 API를 정의할 때 사용
+  - 반환값은 주로 JSON, XML형태로 HTTP응답 본문에 포함된다. (=`@Controller + @ResponseBody`)
+
+
+### RequestBody VS ModelAttribute의 차이점
+- @RequestBody: 요청에 있는 본문에 있는 값을 바인딩할 때 사용
+  - HttpMessageConverter를 거쳐서 JSON값을 객체로 변환(역직렬화)
+  - `record`타입의 경우 기본생성자를 정의하지 않아도 모든 필드를 초기화하는 생성자를 제공
+- @ModelAttribute: `요청파라미터`나 `multipart/form-data`형식을 바인딩할 때 사용 
+- - [RequestBody VS ModelAttribute의 차이점](https://www.maeil-mail.kr/question/14)
+
+### Tomcat
+- 웹서버 + 웹컨테이너의 결합
+- 현재 가장 일반적이고 많이 사용되는 WAS
+- 서블릿?
+  - 자바를 이용해 웹서비스를 만들기 위한 스펙. 클라이언트가 프로그램으로 요청을 보내면 그 요청에 대한 결과를 응답해주기 위해 사용.
+  - 생명주기: 사용자의 요청이 들어오면 서블릿 컨테이너가 서블릿이 존재하는지 확인하고 없는 경우 init()메서드를 호출하여 생성. 이후 요청은 service()메서드를 실행. 만약에 서블릿에 종료요청이 오는 경우에 `destroy()`메서드 호출
+- [톰캣에 대해서 설명 LINK](https://www.maeil-mail.kr/question/22)
+
+### Spring, SpringBoot 차이점
+- SpringBoot
+  - 관련 의존성을 Auto Configuration을 통해 관리할 수 있다.
+  - starter의존성 통합 제공
+  - 내장서버 존재(Tomcat, Jetty..) jar파일 배포후에 바로 실행(war파일 톰캣배포 필요없음)
+  - `@EnableAutoconguration`, `@SpringBootApplication`을 통해 자동설정을 활성화환다.
+### [spring boot auto-configuration](spring_auto_configuration.md)
+
+### @Component, @Controller, @Service, @Repository의 차이에 대해서 설명
+- @Component
+  - 일반적인 bean으로 등록하기 위해 사용
+- @Controller
+  - 일반적으로 뷰를 리턴하는 컨트롤러 빈에 대해서 붙임
+- @RestController
+  - JSON, XML등을 반환해야하는 REST API 컨트롤러 빈
+- @Service
+  - 비지니스 로직 작동되는 빈
+  - 트랜잭션 선언
+- @Repository
+  - 데이터베이스와 상호작용하는 빈
+  - Spring6이후 버전에 대해서 @Repository를 붙이지 않고 @Component로 하게 되면  PersistenceExceptionTranslationPostProcessor에 의해 예외가 DataAccessException으로 변환되지 않음. 이 경우 데이터 액세스 계층에서 발생하는 예외 처리에 영향을 미칠 수 있음. 
+
+
+### 데이터베이스 커넥션 풀(Connection Pool)을 사용하지 않으면 어떤 문제가 발생할 수 있나요?
+- 데이터베이스와 상호작용하는 모든요청에 연결-질의-연결종료 행위를 하게 되면 시스템의 부하가 증가할 수 있음
+- 또한 데이터베이스의 최대 연결수를 초과할 수도 있음. 
+- 이를 방지하기위해 설정된 값을 바탕으로 미리 데이터베이스에 연결된 커넥션을 pool로 관
+- 커넥션풀의 사이즈
+  - 커넥션풀을 사용하는 주체는 스레드이기 때문에 커넥션과 스레드풀을 연결지어 생각해야함.
+  - 커넥션풀, 스레드풀 사이즈의 균형이 맞더라도, 너무 큰 사이즈로 설정하면 데이터베이스 서버, 애플리케이션 서버의 메모리와 CPU를 과도하게 사용하게 되므로 성능이 저하됨.
+- [데이터베이스 커넥션 풀(Connection Pool)을 사용하지 않으면 어떤 문제가 발생할 수 있나요? LINK](https://www.maeil-mail.kr/question/88)
 - 
