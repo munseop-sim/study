@@ -36,10 +36,25 @@
      - 쿠키나 토큰과 같은 인증 정보를 포함한 요청은 더욱 안전하게 처리되어야 함
      - Credential Request를 요청하는 경우에는 서버에서는 Access-Control-Allow-Credentials를 true로 설정해야 하며 Access-Control-Allow-Origin에 와일드카드를 사용하지 못함
 - 참고자료
-  - [결제창에서-cors-대응하기](https://docs.tosspayments.com/blog/payment-window-cors-error#%EA%B2%B0%EC%A0%9C%EC%B0%BD%EC%97%90%EC%84%9C-cors-%EB%8C%80%EC%9D%91%ED%95%98%EA%B8%B0)
+  - [결제창에서 CORS 대응하기](https://docs.tosspayments.com/blog/payment-window-cors-error#%EA%B2%B0%EC%A0%9C%EC%B0%BD%EC%97%90%EC%84%9C-cors-%EB%8C%80%EC%9D%91%ED%95%98%EA%B8%B0)
   - [CORS란?](https://tecoble.techcourse.co.kr/post/2020-07-18-cors/)
 
-Credential Request를 요청하는 경우에는 서버에서는 Access-Control-Allow-Credentials를 true로 설정해야 하며 Access-Control-Allow-Origin에 와일드카드를 사용하지 못합니다.
-- [WAS와 웹 서버의 차이점은 무엇인가요?](https://www.maeil-mail.kr/question/105)
+
+### WAS, 웹서버 차이점
+- 웹서버(WebServer)
+  - 정적 컨텐츠(HTML, CSS, JS, 이미지 등)를 제공하는 역할 (정적컨텐츠 제공에 특화)
+  - 동적 컨텐츠 요청시에 요청을 WAS로 전달
+  - Nginx, Apache 등이 있음
+- WAS(WebApplicationServer)
+  - 동적처리가 필요한 요청 처리(동적 컨텐츠 생성과 데이터처리에 특화)
+  - 애플리케이션 로직 수행
+  - tomcat..
+- **WAS에서도 정적인 처리가 가능한데 웹서버를 따로 두는 이유**
+  - WAS가 너무 많은 역할을 담당하면 과부하될 수 있음. 
+  - 웹 서버를 따로 분리하면 WAS는 중요한 애플리케이션 로직에 집중할 수 있으며, 웹 서버는 정적 리소스를 처리하면서 업무 분담이 가능 &rarr; 효율적인 자원(시스템 리소스)관리
+    - 정적 컨텐츠가 많이 사용되는 경우에는 웹 서버를 증설
+    - 애플리케이션 자원이 많이 사용되면 WAS를 증설
+  - 로드 밸런싱을 수행, 캐싱 및 압축, HTTPS 등을 웹 서버에서 처리하도록 할 수 있음.
+
 - [HTTPS에 대해서 설명해주세요.](https://www.maeil-mail.kr/question/106)
 - [Record를 DTO로 사용하는 이유](https://www.maeil-mail.kr/question/107)
