@@ -1,4 +1,18 @@
 - 기본 자료구조: 배열, 스택, 큐.
+### Stack
+- 후입 선출의 자료구조
+- 삭제(pop), 추가(push)는 최상단(top)에서만 이루어짐
+- 언더플로우: 비어있는 스택에서 `pop`시도
+- 오버플로우: 스택의 용량이 넘치는 경우
+- 활용사례: 스택 메모리, 브라우저 뒤로가기 기능, 언두 기능, 수식 괄호 검사 ...
+- Java에서의 Stack
+  - Stack이라는 클래스를 사용할 수 있지만, [Deque](https://docs.oracle.com/javase/8/docs/api/java/util/Deque.html) 인터페이스 구현체를 사용하는 것이 권장
+    - Stack은 내부적으로 Vector를 상속받아서 사용. 
+    - Vector는 인덱스를 통하여 접근, 삽입, 제거 등이 가능하여 스택의 후입선출 특징에는 맞지 않고, 개발자가 실수할 가능성이 존재
+    - synchronized로 구현되어 있어 멀티 스레드 환경에서는 동기화의 이점이 있으나, 불필요한 동기화작업으로 성능측면에서 좋지 않을 수 있음
+    - [Deque](https://docs.oracle.com/javase/8/docs/api/java/util/Deque.html) 인터페이스는 후입선출의 특성을 완전히 유지하면서도 동기화 작업을 가지는 구현체와 그렇지 않은 구현체를 선택할 수 있음. 이는 개발자가 필요에 따라 동기화 작업의 오버헤드를 회피하고 성능을 최적화할 수 있도록 한다.
+    - [Java에서의 Deque](https://www.google.com/search?q=java+deque&oq=java+deque&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQABiABDIHCAIQABiABDIHCAMQABiABDIHCAQQABiABDIHCAUQABiABDIHCAYQABiABDIHCAcQABiABDIHCAgQABiABDIHCAkQABiABNIBCDQyMzdqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8)
+---
 - 고급 자료구조: 그래프, 트리, Hash.
 - 추가 학습 추천:
     - **Linked List**, **Priority Queue(Heap)**, **Trie**, **B-Tree**, **Fenwick Tree**.
