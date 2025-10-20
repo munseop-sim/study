@@ -1,11 +1,32 @@
-### [git](git.md)
-### [solid](solid.md)
-### [동시성제어](동시성_제어.md)
+# Development Tools
 
-- 멱등성 보장
-  1. 분산 시스템에서는 고유한 식별자를 사용하여 멱등성을 보장하는 방법이 일반적입니다. 예를 들어, 메시지 브로커 시스템에서는 메시지를 전송할 때 고유한 메시지 ID를 부여하고, 수신측에서는 이 ID를 확인하여 중복 메시지를 처리하지 않습니다.
+개발 생산성 향상을 위한 도구와 기본 개념들을 정리한 디렉토리입니다.
 
- 
+## 📚 Contents
+
+### [productivity](./productivity)
+개발 생산성 도구 모음
+
+#### [git.md](./productivity/git.md)
+Git 버전 관리 시스템
+- 기본 명령어
+- 브랜치 전략
+- 협업 워크플로우
+
+#### [intellij_shortcut_mac.md](./productivity/intellij_shortcut_mac.md)
+IntelliJ IDEA 단축키 (macOS)
+
+#### [intellij_shortcut_window.md](./productivity/intellij_shortcut_window.md)
+IntelliJ IDEA 단축키 (Windows)
+
+## 개발 기본 개념
+
+### 멱등성 (Idempotency)
+- 분산 시스템에서는 고유한 식별자를 사용하여 멱등성을 보장하는 방법이 일반적
+- 메시지 브로커 시스템에서는 메시지를 전송할 때 고유한 메시지 ID를 부여하고, 수신측에서는 이 ID를 확인하여 중복 메시지를 처리하지 않음
+- [HTTP 메서드에서 멱등성이란 무엇인가요?](https://www.maeil-mail.kr/question/90)
+
+### 참고 자료
 - [로그와 메트릭을 설명](https://www.maeil-mail.kr/question/66)
 - [equals, hashCode 재정의](https://www.maeil-mail.kr/question/70)
 - [동일성과 동등성에 대해서 설명](https://www.maeil-mail.kr/question/71)
@@ -13,7 +34,6 @@
 - [동기, 비동기 차이점](https://www.maeil-mail.kr/question/77)
 - [단위테스트와 통합테스트의 차이점](https://www.maeil-mail.kr/question/83)
 - [스레드, 프로세스, 코어의 수는 많을 수록 좋을까?](https://www.maeil-mail.kr/question/84)
-- [HTTP 메서드에서 멱등성이란 무엇인가요?](https://www.maeil-mail.kr/question/90)
 
 ### CORS(Cross Origin Resource Sharing)
 - 출처가 다른 곳의 리소스를 요청할 때 접근 권한을 부여하는 메커니즘
