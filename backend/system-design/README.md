@@ -10,7 +10,7 @@
 - 노드 추가/제거 시 데이터 재분배 최소화
 - Virtual Node를 통한 부하 분산
 
-### [key-value store.md](./key-value%20store.md)
+### [key_value_store.md](./key_value_store.md)
 **Key-Value 저장소 설계**
 - CAP 이론 (Consistency, Availability, Partition Tolerance)
 - 데이터 복제 및 동기화

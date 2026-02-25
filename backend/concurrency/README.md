@@ -4,7 +4,7 @@
 
 ## 📚 Contents
 
-### [동시성_제어.md](./동시성_제어.md)
+### [concurrency_control.md](./concurrency_control.md)
 
 #### 1. RDB를 통한 동시성 제어
 - **낙관적 락 (Optimistic Lock)**: `@Version` 어노테이션 활용
@@ -26,5 +26,5 @@
 - RabbitMQ, Kafka를 활용한 순차 처리
 
 ## 관련 문서
-- [/db/readme.md](../../db/readme.md) - DB Lock 상세 설명
+- [/db/README.md](../../db/README.md) - DB Lock 상세 설명
 - [/spring/transaction.md](../../spring/transaction.md) - Spring 트랜잭션

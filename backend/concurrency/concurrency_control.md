@@ -2,7 +2,7 @@
 1. RDB
    1. Lock
       1. 낙관적 락(Optimistic Lock) &rarr; SW 레벨 : `@Vesion` 등
-      2. 비관적락 (Pessimistic Lock) &rarr; RDB 레벨 [DBMS Lock](../db/readme.md#db-lock)
+      2. 비관적락 (Pessimistic Lock) &rarr; RDB 레벨 [DBMS Lock](../../db/README.md#db-lock)
    2. Isolation Level 지정
       - READ UNCOMMITED : 다른 트랜잭션에 수행중인 변경 사항을 읽을 수 있음
       - READ COMMITED : 다른 트랜잭션이 커밋한 데이터만 읽을 수있음
