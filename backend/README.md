@@ -22,11 +22,11 @@
 - 행동 패턴: Observer, Strategy, Template
 
 ### 🌐 [network](./network)
-네트워크 및 통신 프로토콜
+네트워크 및 HTTP/Web 통신
 - HTTP Header, TCP Handshake
 - Proxy (Forward/Reverse)
-- 네트워크 타임아웃 (Connection, Socket, Read)
-- 웹사이트 접속 과정
+- 네트워크 타임아웃
+- 웹 기반 백엔드 기초 (멱등성, CORS, SSR/CSR, WAS vs 웹서버)
 
 ### 📮 [messaging](./messaging)
 메시지 브로커 및 이벤트 기반 아키텍처

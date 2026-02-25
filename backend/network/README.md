@@ -4,7 +4,7 @@
 
 ## 📚 Contents
 
-### [readme.md](./readme.md)
+### [README.md](./README.md)
 
 #### HTTP & TCP
 - **HTTP Header**: Key-Value 형태의 요청 메타데이터
@@ -47,6 +47,12 @@
 - 통계 정보, SSL 지원
 - Active Health Check
 - KeepAlived (프록시 이중화)
+
+### [web_fundamentals.md](./web_fundamentals.md)
+- HTTP 멱등성
+- CORS
+- SSR vs CSR
+- 웹서버 vs WAS
 
 ## 관련 문서
 - [/backend/msa/api_gateway.md](../msa/api_gateway.md) - API Gateway 패턴
