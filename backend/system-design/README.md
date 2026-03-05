@@ -4,6 +4,29 @@
 
 ## 📚 Contents
 
+### [design_process.md](./design_process.md)
+**설계 프로세스**
+- 요구사항(FR/NFR) 정리
+- 트래픽/용량 추정
+- 아키텍처/데이터/API/운영 설계 순서
+- 최소 산출물 및 실패 패턴
+
+### [adr_template.md](./adr_template.md)
+**ADR 템플릿**
+- 아키텍처 의사결정 기록 표준
+- 대안/트레이드오프/검증/롤백까지 포함
+- 실전 작성 예시 제공
+
+### [case_study_order_system.md](./case_study_order_system.md)
+**주문 시스템 설계 케이스 스터디**
+- 요구사항부터 용량 추정, 아키텍처, API, 장애 대응까지 연결
+- Outbox, 멱등성 키, 관측성 지표 예시
+
+### [design_review_checklist.md](./design_review_checklist.md)
+**설계 리뷰 체크리스트**
+- 요구사항, 정합성, 확장성, 복구, 보안, 운영 관점 점검
+- 리뷰 결과 기록 템플릿 포함
+
 ### [consistent_hashing.md](./consistent_hashing.md)
 **일관성 해싱 (Consistent Hashing)**
 - 분산 시스템에서 데이터 분배 전략
