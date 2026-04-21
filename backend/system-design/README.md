@@ -57,6 +57,24 @@
 - 분산 시스템에서의 설정 동기화
 - 대표 도구: Spring Cloud Config, Consul, etcd
 
+### [circuit_breaker.md](./circuit_breaker.md)
+**Circuit Breaker 패턴과 Resilience4j 구현**
+- Circuit Breaker 상태 머신 (Closed / Open / Half-Open)
+- Resilience4j 설정 및 Spring Boot 통합
+- Fallback 전략 및 메트릭 모니터링
+
+### [observability_stack.md](./observability_stack.md)
+**관찰성 3 Pillars (Logs / Metrics / Traces) 통합 스택**
+- Logs: 구조적 로깅, MDC, ELK/Loki 연동
+- Metrics: Micrometer + Prometheus + Grafana
+- Traces: OpenTelemetry, Zipkin/Jaeger 분산 추적
+
+### [ai_assisted_backend_development.md](./ai_assisted_backend_development.md)
+**AI 보조 개발 시대의 시니어 백엔드 역할과 검증 체크리스트**
+- AI 생성 코드의 신뢰성 평가 기준
+- 아키텍처 검증 포인트 (정합성, 보안, 성능)
+- 시니어 엔지니어의 판단 영역과 AI 위임 경계
+
 ## 설계 시 고려사항
 
 ### 확장성 (Scalability)

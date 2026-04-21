@@ -16,6 +16,12 @@
 - **ISP** (Interface Segregation Principle): 인터페이스 분리 원칙
 - **DIP** (Dependency Inversion Principle): 의존성 역전 원칙
 
+### [hexagonal_and_ports_adapters.md](./hexagonal_and_ports_adapters.md)
+Ports & Adapters 패턴 심화 및 Spring Boot 구현 가이드
+- **Ports & Adapters 구조**: Inbound/Outbound 포트 설계
+- **Spring Boot 구현**: Use Case, Port 인터페이스, Adapter 계층 구성
+- **의존성 방향 제어**: 도메인 순수성 유지 전략
+
 ## 참고 자료
 - [우아한테크-클로버의 SOLID](https://www.youtube.com/watch?v=7c0tqHLfxlE)
 - [클린 코더스 강의 12. SOLID Foundation](https://www.youtube.com/watch?v=HIWJ8sF8lO8)

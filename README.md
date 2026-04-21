@@ -13,6 +13,7 @@
 - **[messaging](./backend/messaging)**: Kafka 및 메시지 브로커
 - **[msa](./backend/msa)**: 마이크로서비스, 분산 트랜잭션, SAGA 패턴
 - **[system-design](./backend/system-design)**: 대규모 시스템 설계 (Consistent Hashing, Rate Limiter)
+- **[finance](./backend/finance)**: 금융 도메인 기술 (금액 정밀도, 멱등성 키, 이중부기)
 - **[tools](./backend/tools)**: 개발 생산성 도구 (Git, IntelliJ)
 
 ### 🍃 [spring](./spring)
@@ -20,6 +21,7 @@ Spring Framework 및 Spring Boot
 - Core: DI, Bean, 설정 바인딩, Auto Configuration
 - Data: Transaction, JPA, DB 연결
 - Web MVC: Controller, Interceptor, Exception Handler
+- Batch / Security: Spring Batch (Chunk/Tasklet), Spring Security + JWT
 
 ### 💾 [db](./db)
 데이터베이스
@@ -38,6 +40,10 @@ Java 언어 기초
 - Language Basics
 - Concurrency
 - Exceptions
+
+### 🎯 [kotlin](./kotlin)
+Kotlin 언어
+- Coroutines (CoroutineScope, Dispatcher, Flow, 구조적 동시성)
 
 ### 📚 [book](./book)
 독서 노트

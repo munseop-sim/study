@@ -43,6 +43,12 @@
 - **Eventuate**: Local, Tram
 - **Axon Framework**: Event Sourcing, CQRS, DDD 구현
 
+### [saga_outbox_patterns.md](./saga_outbox_patterns.md)
+SAGA/Outbox 실전 구현 심화 (개념 정리는 `transaction.md` 참조, 이 파일은 실전 구현에 집중)
+- **SAGA 구현 세부**: 코레오그래피/오케스트레이션 코드 레벨 설계
+- **Outbox 패턴**: 트랜잭션 내 이벤트 발행 보장, Polling/CDC 방식 비교
+- **실패 처리**: 보상 트랜잭션 구현 및 멱등성 보장 전략
+
 ### [api_gateway.md](./api_gateway.md)
 
 #### API Gateway
