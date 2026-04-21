@@ -39,6 +39,11 @@
 - 분산 트랜잭션 (2PC, SAGA, 보상 트랜잭션)
 - EDA (Event-Driven Architecture)
 
+### 💰 [finance](./finance)
+금융 도메인 특유의 기술
+- 금액 정밀도 (BigDecimal, IEEE 754, DECIMAL(19,4))
+- 멱등성 키 설계, 이중부기, 환율/통화 전환
+
 ### ⚙️ [system-design](./system-design)
 대규모 시스템 설계
 - Consistent Hashing

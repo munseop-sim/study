@@ -1,5 +1,9 @@
 # 시스템 설계 패턴
 
+> **관련 문서**
+> - [SAGA + Outbox 실전 구현](../msa/saga_outbox_patterns.md) — Outbox 패턴 상세 구현, Polling Publisher, CDC/Debezium, 멱등성 소비자, 면접 Q&A
+> - [MSA 분산 트랜잭션 개요](../msa/transaction.md) — 분산 트랜잭션 개념, 2PC, SAGA 배경
+
 ---
 
 ## 트랜잭셔널 아웃박스 패턴 (Transactional Outbox Pattern)
@@ -90,6 +94,31 @@ public void propagateSample() {
 - [AWS 클라우드 설계 패턴 - 트랜잭션 아웃박스 패턴](https://docs.aws.amazon.com/ko_kr/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html)
 - [강남언니 공식 블로그 - 분산 시스템에서 메시지 안전하게 다루기](https://blog.gangnamunni.com/post/transactional-outbox)
 - [트랜잭셔널 아웃박스 패턴의 실제 구현 사례 (29CM)](https://medium.com/@greg.shiny82/%ED%8A%B8%EB%9E%9C%EC%9E%AD%EC%85%94%EB%84%90-%EC%95%84%EC%9B%83%EB%B0%95%EC%8A%A4-%ED%8C%A8%ED%84%B4%EC%9D%98-%EC%8B%A4%EC%A0%9C-%EA%B5%AC%ED%98%84-%EC%82%AC%EB%A1%80-29cm-0f822fc23edb)
+
+### 소비자 측 멱등성 처리
+
+at-least-once 전달 보장으로 인해 같은 이벤트가 2번 이상 도착할 수 있으므로, 이벤트 소비 시 멱등성 보장이 필요하다.
+
+> 멱등성 소비자 구현 상세(`processed_events` 테이블, UPSERT, 상태 전이)는 [SAGA + Outbox 실전 구현](../msa/saga_outbox_patterns.md) 참고.
+
+### Polling vs CDC 비교
+
+> Polling Publisher vs CDC(Debezium) 상세 비교와 설정 예시는 [SAGA + Outbox 실전 구현](../msa/saga_outbox_patterns.md) 참고.
+
+### Event Sourcing과의 비교
+| 구분 | Outbox 패턴 | Event Sourcing |
+|---|---|---|
+| 상태 저장 | 현재 상태 저장 (기존 방식) | 이벤트 히스토리만 저장 |
+| 이벤트 역할 | 외부 알림용 (부산물) | 시스템의 진실의 원천(Source of Truth) |
+| 복잡도 | 낮음~중간 | 높음 (이벤트 리플레이, 스냅샷) |
+| 기존 시스템 적용 | 쉬움 (outbox 테이블만 추가) | 어려움 (전체 아키텍처 변경) |
+| 적합 상황 | DB 쓰기 + 이벤트 발행 원자성 필요 시 | 완전한 감사 로그, 시간 여행 필요 시 |
+
+### 타임아웃/재시도 전략
+
+발행 실패 시 재시도, Dead Letter 처리, 백프레셔, TTL 관리 등의 전략이 필요하다.
+
+> 재시도 전략 상세(retry_count, Dead Letter, 백프레셔, TTL)는 [SAGA + Outbox 실전 구현](../msa/saga_outbox_patterns.md) 참고.
 
 ---
 

@@ -1,4 +1,9 @@
 # MSA
+
+> **관련 문서**
+> - [SAGA + Outbox 실전 구현](./saga_outbox_patterns.md) — Pivot 트랜잭션, 순서 보장, saga_state, Debezium 설정, 멱등성 소비자, 면접 Q&A
+> - [시스템 설계 패턴 카탈로그](../system-design/patterns.md) — Outbox 패턴 소개, Event Sourcing 개요
+
 - 도메인을 분리하여
 - 커다란 시스템을 여러 개의 작은 시스템으로 나누어 개발하는 방법론
 - 각 시스템은 분리되어 관리되므로 아래와 같은 장점이 있음.
@@ -140,6 +145,37 @@
         - ex. 각각의 서비스의 응답값에 따른 이벤트 발생 분기 등
     ![img.png](image/transaction_05.png)*정상적인 오케스트레이션*
     ![img.png](image/transaction_06.png)*비정상적인 오케스트레이션*
+
+### 2PC vs 보상 트랜잭션 vs SAGA 비교표
+
+| 구분 | 2PC | 보상 트랜잭션 | SAGA |
+|---|---|---|---|
+| 일관성 | 강한 일관성 | 최종적 일관성 | 최종적 일관성 |
+| 코디네이터 | 필수 (SPOF) | 불필요 | 선택 (Orchestrator) |
+| 락 | 글로벌 락 (성능 저하) | 없음 | 없음 |
+| 롤백 방식 | DB 롤백 | 보상 API 호출 | 보상 트랜잭션 이벤트 |
+| 복잡도 | 중간 | 낮음 | 높음 |
+| 적합 환경 | 단일 DB, 소규모 | 간단한 2-3개 서비스 | MSA, 다수 서비스 |
+
+### SAGA Choreography 코드 예시 (Spring + Kafka)
+
+> 코드 예시 및 실패 복구 시나리오 상세는 [SAGA + Outbox 실전 구현](./saga_outbox_patterns.md)을 참고.
+
+### 실패 시나리오 & 복구 흐름
+
+- 시나리오 1: 결제 실패 → 결제 실패 이벤트 → 주문 취소(보상)
+- 시나리오 2: 보상 트랜잭션 실패 → Dead Letter Queue → 수동 개입/재시도
+- 시나리오 3: 이벤트 유실 → Outbox 패턴으로 방지
+
+> 시나리오별 복구 전략 상세는 [SAGA + Outbox 실전 구현](./saga_outbox_patterns.md) 참고.
+
+### Outbox 패턴과의 조합
+
+SAGA에서 이벤트 발행 시 **Outbox 패턴을 함께 사용하는 것이 권장**된다.
+DB 커밋과 이벤트 발행의 원자성을 보장하기 위해 이벤트를 같은 트랜잭션 내 Outbox 테이블에 저장하고, 별도 프로세스(Polling/CDC)가 Kafka로 릴레이한다.
+
+> Outbox 패턴의 스키마, Polling Publisher, CDC/Debezium 상세 설정, 멱등성 소비자 구현은 [SAGA + Outbox 실전 구현](./saga_outbox_patterns.md) 참고.
+
   ---
 # EDA (Event-Driven Architecture)
 - 이벤트소싱을 이용하여 이벤트를 기준으로 모든 데이터의 변경을 처리/조회

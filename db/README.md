@@ -7,6 +7,7 @@
 ### Core
 - [db_transaction.md](./db_transaction.md): 트랜잭션 기초 (ACID, 격리 수준)
 - [locking_and_sql_ops.md](./locking_and_sql_ops.md): 락, DDL/DML 차이, InnoDB 갭락/넥스트키락
+- [mysql_gap_lock_and_phantom.md](./mysql_gap_lock_and_phantom.md): MySQL InnoDB Gap Lock / Next-Key Lock 심화 (`locking_and_sql_ops.md`의 갭락 개념 보완 문서)
 
 ### Engines / Stores
 - [mysql.md](./mysql.md)

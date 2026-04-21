@@ -19,6 +19,10 @@ Spring Framework / Spring Boot 학습 내용을 주제별로 분류한 인덱스
 - [web_mvc.md](./web_mvc.md): MVC 흐름, Controller 계열, Filter/Interceptor
 - [exception_handler.md](./exception_handler.md): 예외 처리
 
+### Batch / Security
+- [spring_batch.md](./spring_batch.md): Spring Batch 구조 (Chunk/Tasklet) + 트랜잭션 전파 심화
+- [spring_security.md](./spring_security.md): Spring Security 아키텍처 + JWT 인증/인가
+
 ### Mapping / Utility
 - [mapstruct_intro.md](./mapstruct_intro.md): MapStruct
 - [async_observability.md](./async_observability.md): 동기/비동기, 로그/메트릭
