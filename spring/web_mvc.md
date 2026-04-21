@@ -53,6 +53,34 @@
 | 실행 시점 | 서블릿 이전/이후 (가장 먼저) | 컨트롤러 이전/이후 (Filter 이후) |
 | 세밀한 핸들러 제어 | 불가 | 가능 (핸들러 메서드 어노테이션 확인 가능) |
 
+### Filter vs Interceptor vs AOP 3자 비교
+
+| 구분 | Filter | Interceptor | AOP |
+|---|---|---|---|
+| 관리 주체 | 서블릿 컨테이너 (Tomcat) | Spring MVC | Spring IoC |
+| 실행 시점 | DispatcherServlet 이전 | DispatcherServlet 이후, Controller 이전/이후 | 메서드 실행 전/후/주변 |
+| 구현 방식 | `javax.servlet.Filter` | `HandlerInterceptor` | `@Aspect` + `@Around`/`@Before`/`@After` |
+| Spring Bean 접근 | 제한적 (`DelegatingFilterProxy` 필요) | 가능 | 가능 |
+| 적용 대상 | URL 패턴 기반 (모든 요청) | Handler(Controller) 기반 | 메서드 레벨 (서비스/리포지토리 등 포함) |
+| 예외 처리 | try-catch 직접 처리 | `@ControllerAdvice` 불가 | `@ControllerAdvice` 불가 |
+| 대표 사용 사례 | 인코딩, CORS, 보안(Spring Security), 로깅 | 인증/인가 체크, 로깅, 공통 데이터 세팅 | 트랜잭션, 로깅, 성능 측정, 권한 검사 |
+
+### 실행 순서 다이어그램
+
+```
+HTTP 요청 → Filter → DispatcherServlet → Interceptor(preHandle) → Controller
+                                        ← Interceptor(postHandle) ← Controller
+           ← Filter ← DispatcherServlet ← Interceptor(afterCompletion)
+
+AOP는 별도 레이어: Service/Repository 메서드 호출 시 프록시를 통해 적용
+```
+
+### 선택 기준 가이드
+
+- **웹 요청/응답 자체를 변경** (인코딩, 압축) → **Filter**
+- **Controller 전후 공통 처리** (인증, 로깅, 데이터 세팅) → **Interceptor**
+- **비즈니스 로직 횡단 관심사** (트랜잭션, 캐싱, 성능 측정) → **AOP**
+
 ---
 
 ## @Controller vs @RestController

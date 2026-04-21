@@ -25,6 +25,22 @@
 #### 4. 메시지 큐 활용
 - RabbitMQ, Kafka를 활용한 순차 처리
 
+### [toctou.md](./toctou.md)
+
+#### TOCTOU (Time-of-Check-Time-of-Use)
+- **정의**: 검사 시점(Check)과 사용 시점(Use) 사이에 상태가 변경되는 Race Condition의 하위 유형
+- **발생 유형**
+  - 파일 시스템 TOCTOU (보안 취약점, CWE-367)
+  - 비즈니스 로직 TOCTOU (잔액/재고 차감, 멱등성 검사)
+  - 인증/권한 TOCTOU
+- **해결 패턴**
+  - 원자적 연산 (Atomic Operation)
+  - 비관적 락 (Pessimistic Lock)
+  - 낙관적 락 (Optimistic Lock)
+  - Double-Check Locking
+  - CAS (Compare-And-Swap)
+- **실무 체크리스트**: 코드 리뷰 시 TOCTOU 의심 패턴
+
 ## 관련 문서
 - [/db/README.md](../../db/README.md) - DB Lock 상세 설명
 - [/spring/transaction.md](../../spring/transaction.md) - Spring 트랜잭션
