@@ -134,3 +134,4 @@ dmypy.json
 java_language.iml
 
 **/.gradle
+/CLAUDE.md

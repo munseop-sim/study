@@ -78,7 +78,8 @@ JPA(Spring Data JPA)는 데이터 액세스 계층 구현의 복잡성을 크게
 2. `@Version` 필드가 wrapper 타입 → `null` 여부로 판단
 3. 그 외 기본 → `@Id` 필드 기준
    - wrapper 타입: `null`이면 신규
-   - `Number` 하위 타입: `0L`이면 신규
+   - primitive number 타입: `0` 또는 `0L`이면 신규
+   - wrapper `Long`, `Integer` 등은 `null`이어야 신규
 
 **직접 ID를 할당하는 경우의 문제점**
 
@@ -143,7 +144,7 @@ public boolean isNew() {
 
 | 패치 전략 | 동작 | N+1 발생 여부 |
 |---|---|---|
-| **즉시 로딩(EAGER)** | JPQL은 전략 무시 → 전체 조회 후 연관 엔티티를 즉시 추가 조회 | 발생 |
+| **즉시 로딩(EAGER)** | JPQL은 fetch join 없는 SQL만 실행 → N개 결과에 대해 Hibernate가 EAGER 전략을 맞추기 위해 N번 추가 SELECT | 발생 |
 | **지연 로딩(LAZY)** | 연관 엔티티를 프록시로 초기화 | 프록시 실제 사용 시 N+1 발생 |
 
 **해결 방법**
@@ -174,11 +175,16 @@ List<User> findAll();
 | 전략 | 설명 | 주요 DB | 특이사항 |
 |---|---|---|---|
 | **IDENTITY** | ID 생성을 DB에 위임 (AUTO_INCREMENT) | MySQL, PostgreSQL | 쓰기 지연 불가. persist 시 즉시 INSERT. 배치 INSERT 불가. |
-| **SEQUENCE** | DB 시퀀스 객체를 통해 ID 채번 | Oracle, PostgreSQL 등 | persist 시 시퀀스 조회 후 엔티티에 ID 할당, 실제 INSERT는 flush 시점 |
+| **SEQUENCE** | DB 시퀀스 객체를 통해 ID 채번 | Oracle, PostgreSQL 등 | persist 시 시퀀스 조회 후 엔티티에 ID 할당, 실제 INSERT는 flush 시점. `allocationSize`로 시퀀스 값을 미리 확보 가능 |
 | **TABLE** | 키 전용 테이블로 시퀀스 흉내 | 모든 DB | SELECT+UPDATE 2회 통신으로 SEQUENCE보다 성능 낮음 |
 | **AUTO** | 방언(Dialect)에 따라 위 세 전략 중 자동 선택 | 모든 DB | DB 변경 시 코드 수정 불필요 |
 
 **IDENTITY 전략 핵심 주의사항**: 영속성 컨텍스트에 저장하려면 식별자가 필요한데, IDENTITY는 INSERT 후에야 ID가 생긴다. 따라서 `em.persist()` 호출 즉시 INSERT가 실행되어 **쓰기 지연이 동작하지 않는다**.
+
+**SEQUENCE 전략 핵심 주의사항**: `@SequenceGenerator`의 `allocationSize` 기본값은 50이다.
+JPA는 시퀀스 값을 매번 하나씩 조회하지 않고 일정 범위를 미리 확보해서 ID를 할당할 수 있다.
+따라서 SEQUENCE 전략은 IDENTITY와 달리 쓰기 지연과 배치 INSERT에 유리하다.
+DB 시퀀스의 `INCREMENT BY`와 JPA `allocationSize`가 맞지 않으면 ID 충돌이나 낭비가 생길 수 있으므로 함께 관리해야 한다.
 
 참고: [Identity 전략으로는 Batch Insert가 불가능한 이유](https://dkswnkk.tistory.com/682)
 
@@ -261,3 +267,76 @@ class Product {
 - 뷰에서도 지연로딩이 가능함
 - 트랜잭션 범위 밖에서 지연로딩을 반드시 수행해야 하는 경우 비활성화하기 어려울 수도 있음
 - `spring.jpa.open-in-view=false` 로 비활성화하면 커넥션을 더 일찍 반환하여 리소스 효율 향상
+
+---
+
+## 영속성 컨텍스트 심층 동작 (시니어 심화)
+
+### 1차 캐시 세부 동작
+
+```
+EntityManager.find() 호출 시:
+1. 1차 캐시(Map<EntityKey, Entity>) 조회
+2. 있으면 → DB SELECT 없이 캐시 반환 (같은 트랜잭션 내)
+3. 없으면 → DB SELECT 실행 후 1차 캐시에 등록 + 스냅샷 저장
+```
+
+**중요**: 같은 트랜잭션 내에서 동일 PK로 두 번 조회해도 SELECT는 1회.
+단, `@Query("SELECT w FROM Wallet w WHERE w.id = :id")` 형태의 **JPQL**은 1차 캐시 조회 전 **flush() 트리거** → DB flush 후 캐시 조회.
+
+### JPQL 실행 시 자동 flush
+
+Hibernate에서 JPQL이 실행되면 FlushModeType.AUTO 기준으로 **쿼리 결과에 영향을 줄 수 있는 변경이 있을 때** flush가 발생한다:
+- 이유: JPQL은 DB에서 쿼리를 실행하므로 관련 테이블의 미반영 변경이 있으면 결과 불일치 발생
+- Hibernate는 Query Space를 분석해 변경된 테이블과 쿼리 대상 테이블이 겹칠 때 flush할 수 있다.
+- 따라서 관련 없는 테이블의 변경은 JPQL 실행 전 flush되지 않을 수 있다.
+- FlushModeType.AUTO(기본값): 필요한 경우 JPQL 실행 전 자동 flush
+- FlushModeType.COMMIT: 커밋 시에만 flush (JPQL 결과 불일치 주의)
+
+### flush() 세 가지 타이밍
+
+1. **트랜잭션 커밋 직전** (가장 흔한 경우)
+2. **JPQL/Criteria 쿼리 실행 직전** (FlushModeType.AUTO)
+3. **명시적 em.flush() 호출**
+
+flush()는 영속성 컨텍스트의 변경을 DB에 SQL로 반영하는 것이다.
+하지만 트랜잭션은 아직 끝나지 않았으므로 이후 예외가 발생하면 flush된 변경도 함께 롤백된다.
+즉, **flush ≠ commit** 이며 flush는 DB 반영 시점, commit은 트랜잭션 확정 시점이다.
+
+### Dirty Checking 내부 동작
+
+```
+1. 엔티티 조회 시 → 스냅샷(초기 상태) 저장
+2. flush() 시 → 현재 상태 vs 스냅샷 비교
+3. 차이 있으면 → UPDATE 쿼리 자동 생성
+4. 기본: 모든 컬럼 UPDATE (@DynamicUpdate로 변경 컬럼만 가능)
+```
+
+**주의**: @Transactional 없이 변경하면 flush() 없음 → DB 반영 안 됨.
+
+### SELECT FOR UPDATE 이후 save() 흐름
+
+> `isNew()` 판단 기준 및 persist/merge 기본 동작은 "Spring Data JPA에서 새로운 Entity 판단" 섹션 참조.
+
+```java
+// 비관적 락 패턴 예시
+Wallet wallet = walletJpaRepo.findByIdForUpdate(walletId);   // 1. 비관적 락 SELECT
+wallet.withdraw(amount);                                       // 2. 도메인 변경
+walletJpaRepo.save(wallet);                                    // 3. save() 호출
+```
+
+3번에서 `wallet`은 이미 1차 캐시에 있는 영속 상태이므로:
+- `save()` → `merge()` 경로 진입 (ID 있으므로)
+- `merge()`는 내부적으로 1차 캐시 확인 후 이미 관리 중이면 그대로 반환
+- 실제로 **SELECT 추가 발생하지 않음** — 1차 캐시 히트
+
+그러나 `findById()` 추가 호출 시:
+- 같은 트랜잭션 내 → 1차 캐시 반환 (SELECT 없음)
+- 다른 트랜잭션이면 → 새 SELECT 발생
+
+### 면접 포인트 (시니어 검증용)
+
+- Q: JPQL을 실행하면 왜 flush()가 발생하는가?
+- Q: SimpleJpaRepository.save()가 이미 영속 상태인 엔티티에서 SELECT를 발생시키지 않는 이유는?
+- Q: 같은 트랜잭션 내에서 findByIdForUpdate() 이후 findById()를 호출하면 SELECT가 나가는가?
+- Q: @DynamicUpdate 없이 단일 컬럼만 변경해도 모든 컬럼이 UPDATE 되는 이유는?

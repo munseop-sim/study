@@ -26,7 +26,7 @@ Spring Framework 및 Spring Boot
 ### 💾 [db](./db)
 데이터베이스
 - Transaction / Isolation / Lock
-- MySQL / Redis
+- MySQL / Redis / Index Optimization
 - SQL 연산 특성 (drop, truncate, delete)
 
 ### 💻 [cs](./cs)

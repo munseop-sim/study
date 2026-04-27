@@ -11,6 +11,7 @@ Spring Framework / Spring Boot 학습 내용을 주제별로 분류한 인덱스
 
 ### Data
 - [transaction.md](./transaction.md): 스프링 트랜잭션
+- [transaction_propagation_isolation.md](./transaction_propagation_isolation.md): 트랜잭션 전파/격리 실전 패턴, rollback-only, self-invocation
 - [JPA.md](./JPA.md): JPA 기본
 - [config/spring-jpa.md](./config/spring-jpa.md): Spring + JPA 설정
 - [config/mysql_spring_connection_management.md](./config/mysql_spring_connection_management.md): MySQL 연결 관리
@@ -22,6 +23,9 @@ Spring Framework / Spring Boot 학습 내용을 주제별로 분류한 인덱스
 ### Batch / Security
 - [spring_batch.md](./spring_batch.md): Spring Batch 구조 (Chunk/Tasklet) + 트랜잭션 전파 심화
 - [spring_security.md](./spring_security.md): Spring Security 아키텍처 + JWT 인증/인가
+
+### Testing
+- [testing_clock_abstraction.md](./testing_clock_abstraction.md): `java.time.Clock` 주입으로 시간 의존 테스트 안정화
 
 ### Mapping / Utility
 - [mapstruct_intro.md](./mapstruct_intro.md): MapStruct

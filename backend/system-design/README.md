@@ -11,6 +11,12 @@
 - 아키텍처/데이터/API/운영 설계 순서
 - 최소 산출물 및 실패 패턴
 
+### [capacity_planning.md](./capacity_planning.md)
+**Capacity Planning — 트래픽과 용량 산정**
+- DAU/요청 수 기반 평균·피크 QPS 계산
+- 저장소, 네트워크, DB 커넥션 풀, 캐시 용량 산정
+- Retry 증폭과 병목 후보 식별
+
 ### [adr_template.md](./adr_template.md)
 **ADR 템플릿**
 - 아키텍처 의사결정 기록 표준
@@ -49,6 +55,30 @@
   - Fixed Window
   - Sliding Window
 - 분산 환경에서의 Rate Limiting (Redis 활용)
+
+### [caching.md](./caching.md)
+**캐싱 전략과 Cache Stampede 방지**
+- Cache Aside / Write Through / Write Back / Refresh Ahead
+- Redis 싱글 스레드와 Threaded I/O
+- Mutex Lock, singleflight, Stale-While-Revalidate, XFetch
+
+### [dlq_design_patterns.md](./dlq_design_patterns.md)
+**DLQ(Dead Letter Queue) 설계 패턴**
+- Transient/Permanent 실패 분류
+- Retry, Backoff, Jitter, Poison Pill 격리
+- Kafka/SQS/RabbitMQ DLQ 구성과 재처리 운영 기준
+
+### [incident_response_runbook.md](./incident_response_runbook.md)
+**장애 대응 런북**
+- 즉시 대응과 RCA 분리
+- 로그/메트릭/트레이싱 기반 장애 진단 순서
+- DB, Kafka, Redis, 배포 장애별 대응 체크리스트
+
+### [testing.md](./testing.md)
+**시스템 설계 관점의 테스트 전략**
+- 테스트 피라미드와 Spring Boot 테스트 슬라이스
+- 동시성 테스트, 격리 전략, Flaky 테스트 진단
+- 금융 도메인 배포 전 테스트 기준선
 
 ### [dynamic_configuration.md](./dynamic_configuration.md)
 **동적 설정 관리**

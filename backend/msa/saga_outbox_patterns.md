@@ -34,11 +34,12 @@ Phase 2 (Commit):   모두 Yes → Coordinator → "커밋해" 명령
 | 문제 | 설명 |
 |---|---|
 | **Blocking Protocol** | Phase 1 완료 후 Phase 2 응답을 기다리는 동안 모든 참여자가 락을 보유. 처리량 저하 |
-| **Coordinator SPOF** | Coordinator가 Phase 2 전에 죽으면 참여자들은 락을 보유한 채 무한 대기 |
+| **Coordinator 장애** | Coordinator가 장애 나면 참여자는 결정 로그를 기다리며 블로킹될 수 있음. Coordinator 재시작 후 로그 기반으로 완료하지만, Phase 2 도중 일부 참여자만 커밋/롤백되면 Heuristic Exception 같은 불일치 상황이 발생할 수 있음 |
 | **NoSQL/Kafka 미지원** | Kafka, Redis, Elasticsearch 등은 XA 프로토콜을 지원하지 않음 |
 | **긴 응답시간** | 네트워크 왕복 2회 + 락 보유 시간 = 전체 처리량 급감 |
 
-결론: MSA 환경에서 2PC는 현실적으로 쓰기 어렵다.
+단일 DB 안에서 끝나는 작업이라면 2PC가 아니라 로컬 트랜잭션으로 충분하다.
+2PC는 여러 XA 호환 리소스(DB, JMS 등)를 하나의 원자적 트랜잭션으로 묶어야 할 때 필요한 프로토콜이지만, MSA 환경에서는 운영 복잡도와 블로킹 문제 때문에 현실적으로 쓰기 어렵다.
 
 ---
 
@@ -111,7 +112,7 @@ PAYOUT_FAILED → WALLET_CREDIT_BACK → TRADE_CANCELLED
 **설계 원칙**
 1. 모든 로컬 트랜잭션은 반드시 대응하는 보상 트랜잭션이 있어야 함
 2. 보상 트랜잭션 자체도 재시도 가능하도록 멱등성 보장
-3. 보상 불가 작업(환불 불가 수수료 등)은 피벗 트랜잭션 앞에 배치
+3. 보상 불가 작업(환불 불가 수수료 등)은 피벗 트랜잭션 이후에 배치
 
 ```
 Pivot Transaction(피벗): 이 지점 이전은 취소 가능, 이후는 취소 불가
@@ -151,7 +152,7 @@ public void processWalletDebit(DebitCommand cmd) {
     kafkaTemplate.send("wallet.debited", event); // Kafka 발행
 }
 // DB 커밋 성공 → Kafka 발행 실패 → 이벤트 유실
-// DB 롤백       → Kafka 발행 성공 → 유령 이벤트
+// Kafka 발행 성공 → DB 커밋 실패(롤백) → 유령 이벤트
 ```
 
 DB 트랜잭션과 Kafka 발행은 서로 다른 트랜잭션 경계이므로 원자성을 보장할 수 없다.
@@ -205,7 +206,7 @@ public void processWalletDebit(DebitCommand cmd) {
 public void publishPendingEvents() {
     List<OutboxEvent> events = outboxRepository.findByProcessedAtIsNull();
     for (OutboxEvent event : events) {
-        kafkaTemplate.send(event.getTopic(), event.getPartitionKey(), event.getPayload());
+        kafkaTemplate.send(event.getTopic(), event.getPartitionKey(), event.getPayload()).get();
         event.markProcessed();
         outboxRepository.save(event);
     }
@@ -214,6 +215,10 @@ public void publishPendingEvents() {
 
 **장점**: 구현 단순, 추가 인프라 없음
 **단점**: 폴링 주기만큼 지연 발생, DB에 부하, at-least-once 보장을 위한 멱등성 처리 필요
+
+주의: `KafkaTemplate.send()`는 비동기 API다.
+반환된 future의 성공을 확인하지 않고 바로 `processed_at`을 업데이트하면 Kafka 발행 실패 시 이벤트가 유실된다.
+동기 확인(`.get()`), 콜백 성공 시 마킹, 또는 트랜잭셔널 프로듀서 조합으로 발행 성공 이후에만 outbox를 처리 완료로 표시해야 한다.
 
 #### CDC(Change Data Capture) — Debezium
 
@@ -239,14 +244,18 @@ PostgreSQL WAL → Debezium Connector → Kafka Connect → Kafka Topic
 }
 ```
 
-**장점**: 거의 실시간 발행, DB 폴링 부하 없음, 정확히 한 번 발행에 가까움
+**장점**: 거의 실시간 발행, DB 폴링 부하 없음, 대규모 처리에 적합
 **단점**: Kafka Connect 클러스터 필요, Debezium 운영 복잡도, WAL 슬롯 관리 필요
+
+주의: Debezium + Kafka Connect의 기본 전달 보장은 **at-least-once**다.
+커넥터 재시작이나 offset commit 경계에서 중복 이벤트가 발행될 수 있으므로 소비자 멱등성이 필요하다.
+Kafka Connect의 exactly-once support나 transactional producer 설정을 별도로 적용해야 Kafka 쓰기 중복을 줄일 수 있다.
 
 | 비교 항목 | Polling Publisher | CDC (Debezium) |
 |---|---|---|
 | 지연 | 폴링 주기 (수백ms~수초) | 거의 실시간 (ms 단위) |
 | 추가 인프라 | 없음 | Kafka Connect, Connector |
-| DB 부하 | 폴링 쿼리 부하 있음 | WAL 읽기 (부하 적음) |
+| DB 부하/리스크 | 폴링 쿼리 부하 있음 | WAL 읽기 부하는 적지만, Replication Slot 소비 지연 시 WAL 누적으로 디스크 고갈 위험 |
 | 구현 복잡도 | 낮음 | 높음 |
 | 운영 복잡도 | 낮음 | 높음 |
 | 적합한 규모 | 소~중규모 | 대규모, 고처리량 |
@@ -276,8 +285,10 @@ CREATE TABLE processed_event (
 ```java
 @Transactional
 public void handleWalletDebited(WalletDebitedEvent event) {
-    // 1. 이미 처리한 이벤트인지 확인
-    if (processedEventRepository.existsById(event.getEventId())) {
+    // 1. event_id UNIQUE 제약으로 처리 권한 선점
+    try {
+        processedEventRepository.saveAndFlush(new ProcessedEvent(event.getEventId()));
+    } catch (DataIntegrityViolationException e) {
         log.info("이미 처리된 이벤트 스킵: {}", event.getEventId());
         return;
     }
@@ -285,13 +296,12 @@ public void handleWalletDebited(WalletDebitedEvent event) {
     // 2. 비즈니스 로직 수행
     payout.process(event.getAmount(), event.getRecipient());
     payoutRepository.save(payout);
-
-    // 3. 처리된 이벤트 기록 (같은 트랜잭션)
-    processedEventRepository.save(new ProcessedEvent(event.getEventId()));
 }
 ```
 
-**핵심**: 비즈니스 로직 수행 + processedEvent 저장이 같은 트랜잭션 안에 있어야 한다.
+**핵심**: `existsById → 비즈니스 로직 → save` 흐름은 TOCTOU 경쟁 조건이 있다.
+동시에 같은 이벤트가 처리되면 두 스레드 모두 `exists=false`를 볼 수 있으므로, `event_id` UNIQUE 제약에 먼저 INSERT하고 실패 시 중복으로 판단한다.
+processedEvent 저장과 비즈니스 로직은 같은 트랜잭션 안에 있어야 한다.
 
 ### 5.3 자연적 멱등성 활용
 
@@ -299,7 +309,7 @@ public void handleWalletDebited(WalletDebitedEvent event) {
 
 ```java
 // 상태 전이 기반 멱등성: 이미 DEBITED 상태면 다시 차감하지 않음
-if (wallet.getStatus() != WalletStatus.ACTIVE) {
+if (wallet.getStatus() == WalletStatus.DEBITED) {
     return; // 이미 처리됨
 }
 
@@ -393,14 +403,14 @@ CREATE TABLE saga_state (
 | 가용성 | 낮음 (블로킹) | 높음 | 높음 |
 | 복잡도 | 중간 | 낮음→높음 (이벤트 폭발) | 중간 |
 | 가시성 | 중간 | 낮음 | 높음 |
-| 적합한 상황 | 단일 DB 클러스터 | 간단한 플로우 | 복잡한 플로우 |
+| 적합한 상황 | XA 호환 이기종 리소스 간 강한 원자성 필요 | 간단한 플로우 | 복잡한 플로우 |
 
 ---
 
 ## 면접 포인트
 
 ### Q1. "SAGA와 2PC의 차이는 무엇인가요?"
-- 2PC는 강한 원자성을 제공하지만 블로킹 프로토콜이고 코디네이터 SPOF 문제가 있다.
+- 2PC는 강한 원자성을 제공하지만 블로킹 프로토콜이고 코디네이터 장애 시 로그 복구와 heuristic 불일치 처리가 필요하다.
 - SAGA는 로컬 트랜잭션 체인으로 분해하여 최종 일관성을 제공한다. 실패 시 보상 트랜잭션으로 취소한다.
 - MSA 환경에서는 2PC보다 SAGA + Outbox 조합이 현실적이다.
 
@@ -428,3 +438,108 @@ CREATE TABLE saga_state (
 - 단계가 3개 이하, 흐름이 단순하면 Choreography.
 - 단계가 많고 보상 로직이 복잡하면 Orchestration.
 - 실무에서는 Orchestration이 디버깅과 모니터링이 용이하여 선호되는 편이다.
+
+---
+
+## 9. 보상 트랜잭션 실패 처리 확장
+
+보상 트랜잭션(Compensating Transaction) 자체가 실패하는 케이스는 SAGA 패턴의 가장 어려운 문제다.
+예: PG API 호출 후 DB 저장 성공 → 취소(보상) 요청 시 PG API 다운.
+
+### 실패 패턴 분류
+
+| 실패 유형 | 보상 가능 여부 | 처리 전략 |
+|---|---|---|
+| Transient (네트워크, 503) | 가능 | Retry with backoff |
+| PG API 영구 다운 | 불가 | DLQ + 수동 운영자 개입 |
+| Partial 성공 (PG 취소 성공, DB 롤백 실패) | 불가 | 불일치 감지 + 조정 프로세스 |
+| 멱등성 키 만료 후 재시도 | 조건부 | 새 트랜잭션으로 재시도 + 감사 로그 |
+
+### Retry 전략: Exponential Backoff + Jitter
+
+```java
+// 보상 트랜잭션 재시도: 지수 백오프 + 무작위 지터
+public void compensateWithRetry(CompensationTask task) {
+    int maxRetries = 5;
+    long baseDelayMs = 1000L;
+
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            compensate(task);   // 실제 보상 로직 (PG 취소 API 등)
+            return;             // 성공 시 종료
+        } catch (TransientException e) {
+            if (attempt == maxRetries - 1) {
+                deadLetterQueue.send(task, e);  // max 초과 → DLQ
+                return;
+            }
+            long maxDelay = Math.min(30_000L, (1L << (attempt + 1)) * baseDelayMs);
+            long delay = (long) (Math.random() * maxDelay);  // Full Jitter
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                deadLetterQueue.send(task, interrupted);
+                return;
+            }
+        } catch (PermanentException e) {
+            deadLetterQueue.send(task, e);  // 즉시 DLQ
+            return;
+        }
+    }
+}
+```
+
+**Full Jitter 권장**: `sleep = random(0, min(cap, base * 2^retryNumber))`
+위 코드에서는 `attempt`가 0부터 시작하므로 `retryNumber = attempt + 1`로 계산한다.
+AWS에서 권장하는 방식 — 분산 시스템에서 retry storm 방지
+
+### DLQ 연계 설계
+
+보상 트랜잭션 실패 시 DLQ로 이동하는 경우:
+1. **DLQ에 저장**: 원본 이벤트 + 실패 원인 + 재시도 횟수 + traceId
+2. **알람 발송**: Slack/PagerDuty → 운영자 Oncall
+3. **수동 runbook** 수행:
+   - 원인 분석 (PG API 로그, 외부 시스템 상태 확인)
+   - 수동 보상 실행 (관리자 화면 또는 CLI)
+   - 감사 로그 기록 (언제, 누가, 어떤 액션)
+4. **재처리 트리거**: 원인 해소 후 DLQ 메시지 재처리
+
+```sql
+-- DLQ 테이블 (보상 트랜잭션 특화)
+CREATE TABLE compensation_dead_letter (
+    id BIGINT PRIMARY KEY,
+    saga_id VARCHAR(64) NOT NULL,
+    step_name VARCHAR(64) NOT NULL,          -- 어느 SAGA 단계 보상인지
+    original_payload JSONB NOT NULL,
+    error_type VARCHAR(128),
+    error_message TEXT,
+    retry_count INT DEFAULT 0,
+    correlation_id VARCHAR(64),
+    created_at TIMESTAMP NOT NULL,
+    resolved_at TIMESTAMP,
+    resolution_note TEXT                     -- 수동 처리 내용 기록
+);
+```
+
+### Poison Pill 처리
+
+동일 보상 메시지가 반복 실패하는 경우:
+- **감지**: retry_count > 3 이고 동일 error_type 반복 → Poison Pill 판단
+- **격리**: `quarantine` 상태로 마킹 → 자동 재처리 대상에서 제외
+- **알람**: 심각도 P1으로 격상, 원인 분석 강제
+
+### 불일치(Inconsistency) 감지 및 조정 프로세스
+
+보상도 실패했을 때 시스템이 불일치 상태에 빠지는 경우:
+
+1. **정기 일치 검사 배치**: 외부 시스템(PG)의 상태와 내부 DB 상태를 비교
+2. **불일치 감지 시**: 조정 레코드(reconciliation_task) 생성
+3. **조정 실행**: 외부 시스템이 취소됐는데 내부는 완료 상태 → 내부 강제 취소 + 알람
+4. **감사 로그**: 모든 불일치 발생·해소 이력을 영구 보관
+
+### 면접 포인트
+
+- Q: 보상 트랜잭션 자체가 실패하면 시스템은 어떤 상태가 되며, 어떻게 처리해야 하는가?
+- Q: Exponential Backoff에 Jitter를 추가하는 이유는?
+- Q: DLQ에 보낸 메시지를 재처리할 때 중복 방지는 어떻게 하는가?
+- Q: 외부 시스템과의 불일치를 어떻게 감지하고 해소하는가?

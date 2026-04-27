@@ -382,3 +382,196 @@ management:
 ```
 
 Prometheus가 `/actuator/prometheus` 엔드포인트를 주기적으로 스크래핑하여 메트릭 수집 → Grafana 대시보드에 시각화
+
+---
+
+## 동시성 테스트 패턴 (CountDownLatch · ExecutorService · Reproducer)
+
+### 기본 패턴: CountDownLatch + ExecutorService
+
+다수의 스레드가 동시에 동일 로직을 실행하는 테스트:
+
+```java
+@Test
+void 동시_출금_50회_정합성_검증() throws InterruptedException {
+    int threadCount = 50;
+    ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+    CountDownLatch startLatch = new CountDownLatch(1);   // 동시 출발 신호
+    CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+    AtomicInteger successCount = new AtomicInteger();
+    AtomicInteger failCount = new AtomicInteger();
+
+    for (int i = 0; i < threadCount; i++) {
+        executor.submit(() -> {
+            try {
+                startLatch.await();  // 모두 준비될 때까지 대기
+                withdrawService.withdraw(walletId, 100L, "tx-" + UUID.randomUUID());
+                successCount.incrementAndGet();
+            } catch (Exception e) {
+                failCount.incrementAndGet();
+            } finally {
+                doneLatch.countDown();
+            }
+        });
+    }
+
+    startLatch.countDown();  // 동시 출발
+    doneLatch.await(10, TimeUnit.SECONDS);
+
+    // 검증: 잔액 = 초기 잔액 - (성공 횟수 * 출금액)
+    assertThat(walletRepository.findById(walletId).getBalance())
+        .isEqualTo(initialBalance - successCount.get() * 100L);
+}
+```
+
+### UnsafeWithdrawService(@TestComponent) 패턴
+
+프로덕션 코드와 별도로 **의도적으로 안전하지 않은 구현체**를 테스트 전용으로 정의:
+- 목적: 락 없는 코드에서 데이터 손실(Lost Update)이 실제로 발생함을 재현 (Reproducer 테스트)
+- 의의: 테스트가 문제를 증명함으로써 락의 필요성을 코드로 문서화
+- `@TestComponent`: Spring 컨텍스트에 등록되지만 프로덕션 빈과 분리
+
+```java
+@TestComponent  // 테스트 컨텍스트에만 등록
+public class UnsafeWithdrawService {
+    // SELECT 후 UPDATE 사이에 락 없음 → Lost Update 재현
+    public void withdraw(Long walletId, Long amount) {
+        Wallet wallet = walletRepo.findById(walletId).orElseThrow();
+        wallet.withdraw(amount);
+        walletRepo.save(wallet);  // 비관적 락 없음
+    }
+}
+```
+
+### CountDownLatch 패턴의 한계
+
+- **스케줄러 비결정성**: OS 쓰레드 스케줄링에 따라 실제 동시 실행 보장이 어려움
+- **Flaky 가능성**: CI 환경 vs 로컬 환경의 CPU 코어 수·부하 차이
+- **재현성**: 타이밍에 따라 경쟁 조건이 발생하지 않는 경우 테스트 통과 → 거짓 안심
+- **해결책**:
+  - 더 많은 스레드 수 사용 (50~100개)
+  - Phaser 사용: 더 정밀한 동기화 (N회 반복 barrier)
+  - 반복 실행(`@RepeatedTest(10)`)으로 확률 높이기
+
+---
+
+## 통합 테스트 격리 전략: @Transactional 롤백 vs @DirtiesContext vs Testcontainers
+
+### 비교표
+
+| 전략 | 격리 수준 | 속도 | 실패 모드 | 적합한 상황 |
+|---|---|---|---|---|
+| `@Transactional` 롤백 | 높음 | 빠름 | 실제 COMMIT 동작 미검증 | 단순 CRUD, 단건 로직 |
+| `@DirtiesContext` | 매우 높음 | 느림 (컨텍스트 재생성) | 없음 | 전역 상태 변경 테스트 |
+| Testcontainers | 실환경과 동일 | 매우 느림 | 없음 | 실제 DB 동작, 격리 수준 검증 |
+| `@Sql` 초기화 | 중간 | 중간 | 순서 의존 가능 | 테스트별 다른 초기 데이터 |
+
+### @Transactional 롤백의 함정
+
+```java
+@SpringBootTest
+@Transactional  // 각 테스트 후 자동 롤백
+class WalletServiceTest {
+    @Test
+    void 출금_성공() {
+        // 이 테스트의 트랜잭션은 커밋되지 않음
+        // 문제: COMMIT 이후 트리거, AFTER COMMIT 이벤트 미실행
+        // 문제: 실제 격리 수준 동작 검증 불가
+        // 문제: @Transactional(propagation=REQUIRES_NEW) 내부 로직 롤백 안 됨
+    }
+}
+```
+
+**@Transactional 롤백을 쓰면 안 되는 경우**:
+- Spring Event의 `@TransactionalEventListener(phase = AFTER_COMMIT)` 검증
+- 비관적 락(SELECT FOR UPDATE) 동작 검증
+- 동시성 테스트 (여러 스레드가 각자 트랜잭션 필요)
+
+### @DirtiesContext 비용
+
+```java
+@SpringBootTest
+@DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)  // 매우 느림
+class ExpensiveTest { ... }
+```
+
+- Spring Application Context 재생성 비용: 수 초
+- 대부분의 경우 `@Sql` + `@Transactional` 조합으로 대체 가능
+
+### 동시성 테스트에서의 격리
+
+동시성 테스트는 여러 스레드가 각자의 트랜잭션을 가지므로:
+- `@Transactional` 롤백 불가 (테스트 트랜잭션과 별개)
+- H2 인메모리 + `@Sql("cleanup.sql")`로 각 테스트 전 초기화 권장
+- 또는 Testcontainers로 실제 DB 환경 구성
+
+---
+
+## Flaky 테스트 5대 원인 진단 체크리스트
+
+Flaky 테스트: 코드 변경 없이 실행마다 결과가 달라지는 불안정한 테스트.
+
+| # | 원인 | 증상 | 해결책 |
+|---|---|---|---|
+| 1 | **시간 의존** | `LocalDateTime.now()` 직접 사용, 타임아웃 하드코딩 | `java.time.Clock` 주입, 시간 모킹 |
+| 2 | **순서 의존** | 특정 순서에서만 통과, 병렬 실행 시 실패 | 테스트 간 공유 상태 제거, `@TestMethodOrder` 제거 |
+| 3 | **외부 의존** | 네트워크 연결, 외부 API, 실제 시간 기반 TTL | WireMock, MockServer, Testcontainers |
+| 4 | **리소스 경합** | 포트 충돌, DB 커넥션 풀 부족, 파일 락 | 랜덤 포트(`@LocalServerPort`), 독립 DB 인스턴스 |
+| 5 | **테스트 데이터 충돌** | 다른 테스트가 남긴 데이터, 공유 DB 상태 | `@Sql` cleanup, `@Transactional` 롤백, Testcontainers |
+
+### 진단 절차
+
+```
+1. 실패 재현: 동일 테스트를 100회 반복 실행 → @RepeatedTest(100)
+2. 순서 변경: @TestMethodOrder(Random.class)로 순서 무작위화 후 실행
+3. 병렬 실행: junit-platform.properties에 parallel.enabled=true 설정 후 실행
+4. 시간 고정: @MockBean Clock으로 모든 시간 고정 후 재실행
+5. 환경 분리: 로컬 vs CI 환경 차이 확인 (CPU 코어 수, DB 버전, 타임존)
+```
+
+---
+
+## 금융 도메인 테스트 기준선 (배포 전 반드시 통과해야 할 테스트)
+
+금융 서비스에서 테스트 없이 배포하면 안 되는 5대 시나리오:
+
+| 카테고리 | 테스트 내용 | 검증 포인트 |
+|---|---|---|
+| **성공 경로** | 정상 출금·입금·송금 | 잔액 정확성, 원장 레코드 생성 |
+| **경계 조건** | 잔액 = 출금액, 잔액 = 0, 최대 금액 | CHECK 제약, 음수 잔액 방지 |
+| **동시성** | N개 스레드 동시 출금 | Lost Update 없음, 잔액 정합성 |
+| **보상 실패** | PG API 다운 시 보상 트랜잭션 | DLQ 이동, 알람, 원장 불일치 없음 |
+| **멱등 재시도** | 동일 txId로 N회 재요청 | 한 번만 처리, 동일 응답 반환 |
+
+### 추가 권장 테스트 (락 타임아웃·웹훅 재시도)
+
+```java
+// 락 타임아웃 테스트
+@Test
+void 락_타임아웃_시_LockTimeoutException_발생() {
+    // Thread A가 락 보유 중
+    // Thread B가 락 대기 → timeout.ms 초과 → LockTimeoutException
+    // 검증: 원장 레코드 미생성, 잔액 불변
+}
+
+// 웹훅 재시도 테스트 (보상 실패 후 DLQ)
+@Test
+void 보상_트랜잭션_3회_실패_시_DLQ_이동() {
+    // PG API Mock → 503 응답 3회
+    // 검증: DLQ 테이블에 레코드 생성, 알람 발송
+}
+
+// 부분 성공 시나리오 (송금: A 차감 성공, B 증가 실패)
+@Test
+void 수취지갑_증가_실패_시_발신지갑_차감_롤백() {
+    // 검증: A 잔액 원복, 원장 레코드 없음, 보상 트랜잭션 실행
+}
+```
+
+### 면접 포인트
+
+- Q: 동시성 테스트에서 CountDownLatch 패턴의 한계는 무엇이며, 재현성을 높이는 방법은?
+- Q: @Transactional 롤백 기반 테스트를 동시성 테스트에 쓰면 안 되는 이유는?
+- Q: Flaky 테스트가 발생했을 때 진단 순서는?
+- Q: 금융 도메인에서 "배포 전 반드시 있어야 하는 테스트"를 고른다면?
