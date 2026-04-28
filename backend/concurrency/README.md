@@ -41,6 +41,15 @@
   - CAS (Compare-And-Swap)
 - **실무 체크리스트**: 코드 리뷰 시 TOCTOU 의심 패턴
 
+### [distributed_locks_redlock_fencing.md](./distributed_locks_redlock_fencing.md)
+
+#### 분산 락 — Redis SETNX, Redlock, Fencing Token
+- **Redis SET NX PX**: 단일 노드 분산 락 구현과 Lua 기반 안전한 해제
+- **Redlock**: 다중 Redis 노드 쿼럼 기반 락 획득 알고리즘과 한계
+- **Fencing Token**: 락 만료·GC pause·네트워크 지연 상황에서 stale writer 방지
+- **실무 판단 기준**: 단일 Redis 락, Redlock, DB 비관적 락, 메시지 직렬화 중 선택 기준
+
 ## 관련 문서
 - [/db/README.md](../../db/README.md) - DB Lock 상세 설명
 - [/spring/transaction.md](../../spring/transaction.md) - Spring 트랜잭션
+- [/db/redis.md](../../db/redis.md) - Redis 단일 스레드와 원자 명령

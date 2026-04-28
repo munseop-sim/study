@@ -12,7 +12,7 @@
 ### 🔄 [concurrency](./concurrency)
 동시성 제어 및 병렬 처리
 - RDB Lock (낙관적 락, 비관적 락)
-- Redis 분산 락
+- Redis 분산 락, Redlock, Fencing Token
 - 트랜잭션 격리 수준
 
 ### 🎨 [design-patterns](./design-patterns)
@@ -31,7 +31,7 @@
 ### 📮 [messaging](./messaging)
 메시지 브로커 및 이벤트 기반 아키텍처
 - Kafka 설치 및 운영
-- Kafka 심화
+- Kafka 심화, Exactly-Once Semantics(EOS), Consumer Offset/Rebalance
 
 ### 🏢 [msa](./msa)
 마이크로서비스 아키텍처
@@ -42,14 +42,15 @@
 ### 💰 [finance](./finance)
 금융 도메인 특유의 기술
 - 금액 정밀도 (BigDecimal, IEEE 754, DECIMAL(19,4))
-- 멱등성 키 설계, 이중부기, 환율/통화 전환
+- 멱등성 키 설계, 이중부기 원장, 환율/통화 전환
 
 ### ⚙️ [system-design](./system-design)
 대규모 시스템 설계
 - Consistent Hashing
 - Key-Value Store
 - Rate Limiter
-- Dynamic Configuration
+- Dynamic Configuration, Capacity Planning
+- Caching, DLQ, Incident Response, Testing Strategy
 
 ### 🛠️ [tools](./tools)
 개발 생산성 도구
